@@ -1,0 +1,20 @@
+{
+	"name": "MLP_API",
+	"dockerComposeFile": [
+			"../docker-compose.yml"
+	],
+	"service": "app",
+	"workspaceFolder": "/app",
+	"extensions": [
+		"golang.go",
+		"ms-vscode.Go",
+		"mosapride.zenkaku",
+		"MS-CEINTL.vscode-language-pack-ja",
+		"gopls"
+	],
+	"settings": {
+			"go.useLanguageServer": true,
+			"go.formatTool": "gofmt"
+	},
+	"remoteUser": "root"
+}

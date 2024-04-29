@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+  app:
+    container_name: go_app
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src/:/app
+    tty: true
+    environment:
+      DB_USER: ${POSTGRES_USER}
+      DB_NAME: ${POSTGRES_DB}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - db
+  db:
+    container_name: postgres
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - 5432:5432
+    volumes:
+      - ./dump/01_create_tables.sql:/docker-entrypoint-initdb.d/01_create_tables.sql
+      - ./dump/02_insert_data.sql:/docker-entrypoint-initdb.d/02_insert_data.sql
