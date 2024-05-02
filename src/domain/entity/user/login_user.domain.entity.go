@@ -4,6 +4,7 @@ import (
 	status "github.com/Go_CleanArch/common/const"
 	"github.com/Go_CleanArch/common/crypto"
 	"github.com/Go_CleanArch/common/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // LoginUserBuilderProps はイベント作成のプロパティを定義する。
@@ -17,19 +18,20 @@ type LoginUserBuilderPropsOption func(*LoginUserBuilderProps) ([]errors.ApiErrMe
 
 func NewLoginUserDomainProps(opts ...LoginUserBuilderPropsOption) (*LoginUserBuilderProps, *errors.ApiErr) {
 	apiErrMessages := make([]errors.ApiErrMessage, 0)
-	presenter := &LoginUserBuilderProps{}
+	loginUserBuilderProps := &LoginUserBuilderProps{}
 	for _, opt := range opts {
-		setErrMessages, err := opt(presenter)
+		setErrMessages, err := opt(loginUserBuilderProps)
 		if err != nil {
 			// エラーが発生した場合は、Internal Server Error を返す
+			log.WithError(err).Error("login user domain entity INTERNAL_SERVER_ERROR")
 			apiErr := errors.OutputApiError([]errors.ApiErrMessage{
 				{
 					Key:   "undefined",
 					Value: err.Error(),
 				},
 			},
-			status.ErrorStatusMap["INTERNAL_SERVER_ERROR"].StatusCode,
-			status.ErrorStatusMap["INTERNAL_SERVER_ERROR"].StatusName,
+				status.ErrorStatusMap["INTERNAL_SERVER_ERROR"].StatusCode,
+				status.ErrorStatusMap["INTERNAL_SERVER_ERROR"].StatusName,
 			)
 			return nil, apiErr
 		}
@@ -46,7 +48,8 @@ func NewLoginUserDomainProps(opts ...LoginUserBuilderPropsOption) (*LoginUserBui
 		return nil, apiErr
 	}
 
-	return presenter, nil
+	log.Info("login User Builder Props generated successfully")
+	return loginUserBuilderProps, nil
 }
 
 func WithLoginUserIdAndEmail(email string) LoginUserBuilderPropsOption {
@@ -68,6 +71,7 @@ func WithLoginPassword(targetPassword string, sourcePassword string) LoginUserBu
 	return func(props *LoginUserBuilderProps) ([]errors.ApiErrMessage, error) {
 		err := crypto.CompareHashAndPassword(targetPassword, sourcePassword)
 		if err != nil {
+			log.WithError(err).Error("Failed to compare password")
 			return []errors.ApiErrMessage{
 				{
 					Key:   "password",

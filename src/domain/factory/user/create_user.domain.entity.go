@@ -4,6 +4,7 @@ import (
 	status "github.com/Go_CleanArch/common/const"
 	"github.com/Go_CleanArch/common/crypto"
 	"github.com/Go_CleanArch/common/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // CreateUserFactoryProps は、ユーザー作成に必要なプロパティを持つ構造体
@@ -27,6 +28,7 @@ func NewCreateUserFactoryProps(opts ...CreateUserFactoryPropsOption) (*CreateUse
 		setErrMessages, err := opt(createUserFactoryProps)
 		if err != nil {
 			// エラーが発生した場合は、Internal Server Error を返す
+			log.WithError(err).Error("Failed to apply user factory props option")
 			apiErr := errors.OutputApiError(
 				[]errors.ApiErrMessage{
 					{
@@ -44,6 +46,7 @@ func NewCreateUserFactoryProps(opts ...CreateUserFactoryPropsOption) (*CreateUse
 
 	// エラーメッセージがある場合は、EnableCheckError を返す
 	if len(apiErrMessages) > 0 {
+		log.WithField("apiErrMessages", apiErrMessages).Error("Validation errors occurred")
 		apiErr := errors.OutputApiError(
 			apiErrMessages,
 			status.ErrorStatusMap["ENABLE_CHECK_ERROR"].StatusCode,
@@ -52,6 +55,7 @@ func NewCreateUserFactoryProps(opts ...CreateUserFactoryPropsOption) (*CreateUse
 		return nil, apiErr
 	}
 
+	log.WithField("userId", createUserFactoryProps.UserId).Info("User factory props created successfully")
 	return createUserFactoryProps, nil
 }
 
@@ -59,7 +63,8 @@ func NewCreateUserFactoryProps(opts ...CreateUserFactoryPropsOption) (*CreateUse
 func WithUserId(userId string) CreateUserFactoryPropsOption {
 	return func(props *CreateUserFactoryProps) ([]errors.ApiErrMessage, error) {
 		if userId != "" {
-			// パスワードのハッシュ化に失敗した場合は、エラーメッセージを返す
+			// ユーザーIDが空でない場合は、エラーメッセージを返す
+			log.WithField("userId", userId).Info("User ID already exists")
 			return []errors.ApiErrMessage{
 				{
 					Key:   "email",
@@ -71,7 +76,7 @@ func WithUserId(userId string) CreateUserFactoryPropsOption {
 	}
 }
 
-// WithUserIdAndEmail は、メールアドレスからユーザーIDを生成し、プロパティにセットするオプション
+// WithEmail は、メールアドレスからユーザーIDを生成し、プロパティにセットするオプション
 func WithEmail(email string) CreateUserFactoryPropsOption {
 	return func(props *CreateUserFactoryProps) ([]errors.ApiErrMessage, error) {
 		props.UserId = crypto.GenerateUserId(email)
@@ -84,6 +89,7 @@ func WithEmail(email string) CreateUserFactoryPropsOption {
 func WithUserName(userName string) CreateUserFactoryPropsOption {
 	return func(props *CreateUserFactoryProps) ([]errors.ApiErrMessage, error) {
 		props.UserName = userName
+		log.WithField("userName", userName).Info("User name set")
 		return nil, nil
 	}
 }
@@ -93,9 +99,11 @@ func WithPassword(password string) CreateUserFactoryPropsOption {
 	return func(props *CreateUserFactoryProps) ([]errors.ApiErrMessage, error) {
 		hashedPw, err := crypto.PasswordEncrypt(password)
 		if err != nil {
+			log.WithError(err).Error("Failed to encrypt password")
 			return nil, err
 		}
 		props.Password = hashedPw
+		log.Info("Password encrypted and set")
 		return nil, nil
 	}
 }

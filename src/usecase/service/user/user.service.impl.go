@@ -12,6 +12,7 @@ import (
 	outputUser "github.com/Go_CleanArch/usecase/output/user"
 	repository "github.com/Go_CleanArch/usecase/repository_interface"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 // Service provides user's behavior
@@ -31,6 +32,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	var createUserForm inputUser.CreateUserForm
 	var createUserPresenter outputUser.CreateUserPresenter
 	if err := c.BindJSON(&createUserForm); err != nil {
+		log.WithError(err).Error("Failed to bind JSON request body")
 		return createUserPresenter, err
 	}
 
@@ -42,12 +44,17 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 			status.ErrorStatusMap["BAD_REQUEST"].StatusCode,
 			status.ErrorStatusMap["BAD_REQUEST"].StatusName,
 		)
+		log.WithField("apiErr", apiErr).Error("Validation error occurred")
 		c.JSON(apiErr.Status, apiErr)
 		return createUserPresenter, apiErr.Error()
 	}
 
 	// 登録済みのメールアドレスを再登録しようとしていないかチェック
-	findUser, _ := us.userRepository.FindUserByEmail(ctx, createUserForm.Email)
+	findUser, err := us.userRepository.FindUserByEmail(ctx, createUserForm.Email)
+	if err != nil {
+		log.WithError(err).Error("Failed to find user by email")
+		return createUserPresenter, err
+	}
 	findUserId := ""
 	if findUser != nil {
 		findUserId = findUser.UserId
@@ -61,6 +68,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 		createUserDomain.WithPassword(createUserForm.Password),
 	)
 	if apiErr != nil {
+		log.WithField("apiErr", apiErr).Error("Failed to build user factory props")
 		c.JSON(apiErr.Status, apiErr)
 		return createUserPresenter, apiErr.Error()
 	}
@@ -68,17 +76,21 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	// ビルドしたユーザー情報を基にユーザー登録を行う
 	getUserJson, err := crypto.ConvertStructIntoJson(createUserFactoryProps)
 	if err != nil {
+		log.WithError(err).Error("Failed to convert user factory props into JSON")
 		c.JSON(500, err)
 		return createUserPresenter, err
 	}
 	createdUser, err := us.userRepository.CreateUser(ctx, getUserJson)
 	if err != nil {
+		log.WithError(err).Error("Failed to create user")
 		c.JSON(500, err)
 		return createUserPresenter, err
 	}
 	if err := crypto.ConvertJsonAndCopyBean(createdUser, &createUserPresenter); err != nil {
+		log.WithError(err).Error("Failed to convert created user into presenter")
 		return createUserPresenter, err
 	}
+	log.WithField("userId", createUserPresenter.UserId).Info("User created successfully")
 	return createUserPresenter, nil
 }
 
@@ -88,6 +100,7 @@ func (us *UserService) LoginService(ctx context.Context, c *gin.Context) (output
 	var loginPresenter outputUser.LoginPresenter
 
 	if err := c.BindJSON(&loginForm); err != nil {
+		log.WithError(err).Error("Failed to bind JSON request body")
 		return loginPresenter, err
 	}
 
@@ -99,6 +112,7 @@ func (us *UserService) LoginService(ctx context.Context, c *gin.Context) (output
 			status.ErrorStatusMap["BAD_REQUEST"].StatusCode,
 			status.ErrorStatusMap["BAD_REQUEST"].StatusName,
 		)
+		log.WithField("apiErr", apiErr).Error("Validation error occurred")
 		c.JSON(apiErr.Status, apiErr)
 		return loginPresenter, apiErr.Error()
 	}
@@ -106,11 +120,14 @@ func (us *UserService) LoginService(ctx context.Context, c *gin.Context) (output
 	getUser, err := us.userRepository.FindUserByEmail(ctx, loginForm.Email)
 	// メールアドレス確認
 	if err != nil {
-		apiErr := errors.OutputApiError(append(apiErrMessages,
-			errors.ApiErrMessage{
-				Key:   "email",            // エラーの発生したフィールド名
-				Value: "Emailアドレスが存在しません", // エラーメッセージ
-			}),
+		log.WithError(err).Error("Failed to find user by email")
+		apiErr := errors.OutputApiError(
+			append(apiErrMessages,
+				errors.ApiErrMessage{
+					Key:   "email",
+					Value: "Emailアドレスが存在しません",
+				},
+			),
 			status.ErrorStatusMap["NOT_FOUND"].StatusCode,
 			status.ErrorStatusMap["NOT_FOUND"].StatusName,
 		)
@@ -124,17 +141,21 @@ func (us *UserService) LoginService(ctx context.Context, c *gin.Context) (output
 		loginUserDomain.WithLoginPassword(getUser.Password, loginForm.Password),
 	)
 	if apiErr != nil {
+		log.WithField("apiErr", apiErr).Error("Failed to build login user domain props")
 		c.JSON(apiErr.Status, apiErr)
 		return loginPresenter, apiErr.Error()
 	}
 
 	getUserJson, err := crypto.ConvertStructIntoJson(loginUserDomainEntity)
 	if err != nil {
+		log.WithError(err).Error("Failed to convert login user domain entity into JSON")
 		return loginPresenter, err
 	}
 	if err := crypto.CopyBeans(getUserJson, &loginPresenter); err != nil {
+		log.WithError(err).Error("Failed to copy login user data into presenter")
 		return loginPresenter, err
 	}
 
+	log.WithField("email", loginPresenter.Email).Info("User logged in successfully")
 	return loginPresenter, nil
 }

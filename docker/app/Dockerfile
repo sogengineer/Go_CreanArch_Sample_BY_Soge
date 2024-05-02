@@ -7,8 +7,9 @@ COPY ./src .
 
 # 必要なパッケージをインストール
 RUN apk upgrade --update && \
-    apk --no-cache add git && \
+    apk --no-cache add git bash && \
     apk upgrade git && \
+    apk add --no-cache gcc musl-dev && \
     apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/community watchexec
 
 # Go 依存関係をインストール
