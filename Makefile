@@ -25,18 +25,15 @@ down:
 	docker compose down
 
 test:
-	docker compose build
 # シェルコマンドでユニットテスト専用ファイルを順次実行
 	docker compose run --rm app bash -c ' \
-		array=(`find . -name "*_test.go"`); \
-		echo テスト対象ファイル; \
-		echo [$$array]; \
-		find . -name "*_test.go" > test_files.txt && \
-		while IFS= read -r file; do \
-			echo "Running tests in file: $$file"; \
-			go test "$$file"; \
-		done < test_files.txt \
-  '
+    array=(`find . -name "*_test.go"`); \
+    echo テスト対象ファイル; \
+    IFS=$$'\''\n'\''; \
+    echo "$${array[*]}"; \
+    packages=$$(find . -name "*_test.go" -exec dirname {} \; | sort -u); \
+    go test $$packages \
+	'
 	make down
 
 # lint:

@@ -34,7 +34,9 @@ func (m *MockUserRepository) CreateUser(ctx context.Context, userJson []byte) (*
 }
 
 func TestCreateUserService(t *testing.T) {
+	t.Parallel()
 	t.Run("新規ユーザー作成_正常系", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 		mockUserRepo := new(MockUserRepository)
 		userService := user_service_impl.NewUserService(mockUserRepo)
@@ -64,6 +66,7 @@ func TestCreateUserService(t *testing.T) {
 	})
 
 	t.Run("新規ユーザー作成_バリデーションエラー", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 		mockUserRepo := new(MockUserRepository)
 		userService := user_service_impl.NewUserService(mockUserRepo)
@@ -88,6 +91,7 @@ func TestCreateUserService(t *testing.T) {
 	})
 
 	t.Run("新規ユーザー作成_メールアドレス重複", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 		mockUserRepo := new(MockUserRepository)
 		userService := user_service_impl.NewUserService(mockUserRepo)
@@ -117,11 +121,13 @@ func TestCreateUserService(t *testing.T) {
 }
 
 func TestLoginService(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	mockUserRepo := new(MockUserRepository)
 	userService := user_service_impl.NewUserService(mockUserRepo)
 
 	t.Run("ログイン_正常系", func(t *testing.T) {
+		t.Parallel()
 		// テスト用のリクエストボディを作成
 		loginForm := inputUser.LoginForm{
 			Email:    "test@example.com",
@@ -151,6 +157,7 @@ func TestLoginService(t *testing.T) {
 	})
 
 	t.Run("ログイン_バリデーションエラー", func(t *testing.T) {
+		t.Parallel()
 		// テスト用のリクエストボディを作成
 		loginForm := inputUser.LoginForm{
 			Email:    "invalid_email",
@@ -175,6 +182,7 @@ func TestLoginService(t *testing.T) {
 	})
 
 	t.Run("ログイン_メールアドレス存在しない", func(t *testing.T) {
+		t.Parallel()
 		// テスト用のリクエストボディを作成
 		loginForm := inputUser.LoginForm{
 			Email:    "nonexistent@example.com",
