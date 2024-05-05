@@ -1,5 +1,4 @@
 src/tmp
-src/go.mod
 src/go.sum
 .env
 .vscode

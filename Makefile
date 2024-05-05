@@ -36,8 +36,8 @@ test:
 	'
 	make down
 
-# lint:
-# 	docker compose run --rm app golangci-lint run
+lint:
+	docker compose run --rm app staticcheck ./...
 
 # coverage:
 # 	docker compose run --rm app go test ./... -coverprofile=coverage.out

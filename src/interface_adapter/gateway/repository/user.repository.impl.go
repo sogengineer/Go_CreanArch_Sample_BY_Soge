@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Go_CleanArch/common/crypto"
-	"github.com/Go_CleanArch/infrastructure/db"
 	dbConnect "github.com/Go_CleanArch/infrastructure/db"
 	"github.com/Go_CleanArch/interface_adapter/gateway/entity"
 	repository "github.com/Go_CleanArch/usecase/repository_interface"
@@ -20,7 +19,7 @@ type userRepository struct {
 
 // コンストラクタ
 func NewUserRepository(ctx context.Context) (repository.UserRepository, error) {
-	dbConnectionResult, err := db.GetDB(ctx)
+	dbConnectionResult, err := dbConnect.GetDB(ctx)
 	if err != nil {
 		log.WithError(err).Error("Failed to connect to the database")
 		return nil, fmt.Errorf("DB接続に失敗しました")

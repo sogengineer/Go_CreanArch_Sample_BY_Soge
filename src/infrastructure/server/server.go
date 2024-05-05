@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type contextKey string
+
 // Init is initialize server
 func Init() {
 	r := router()
@@ -19,7 +21,7 @@ func Init() {
 
 func GinContextToContextMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx := context.WithValue(c.Request.Context(), "context", c)
+		ctx := context.WithValue(c.Request.Context(), contextKey("context"), c)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}

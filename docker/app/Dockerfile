@@ -13,7 +13,8 @@ RUN apk upgrade --update && \
     apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/community watchexec
 
 # Go 依存関係をインストール
-RUN go mod download
+RUN go mod download && \
+    go install honnef.co/go/tools/cmd/staticcheck@v0.3.0
 
 # ホットリロード用のコマンドを設定
 CMD ["watchexec", "-w", ".", "--force-poll", "100", "-r", "go", "run", "main.go"]
