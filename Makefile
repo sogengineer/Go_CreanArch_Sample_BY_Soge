@@ -9,7 +9,7 @@ else
 	COPY = mv src/coverage.* ./
 	UNAME := $(shell uname)
     ifeq ($(UNAME),Linux)
-		OPEN = cmd.exe /c start coverage.html
+				OPEN = cmd.exe /c start coverage.html
     endif
     ifeq ($(UNAME),Darwin)
         OPEN = open coverage.html
