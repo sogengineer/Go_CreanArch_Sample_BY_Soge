@@ -6,7 +6,7 @@ ifeq ($(OS),Windows_NT)
 	OPEN = cmd /c "start coverage.html"
 else
     CP = cp
-	COPY = mv src/coverage.* ./ -f
+	COPY = mv src/coverage.* ./
 	UNAME := $(shell uname)
     ifeq ($(UNAME),Linux)
 		OPEN = cmd.exe /c start coverage.html
