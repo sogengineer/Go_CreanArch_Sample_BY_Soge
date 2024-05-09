@@ -1,11 +1,11 @@
 .PHONY: all
 
 ifeq ($(OS),Windows_NT)
-    CP = copy
+  CP = copy
 	COPY = cmd /c "move /y src\\coverage.* ."
 	OPEN = cmd /c "start coverage.html"
 else
-    CP = cp
+  CP = cp
 	COPY = mv src/coverage.* ./
 	UNAME := $(shell uname)
     ifeq ($(UNAME),Linux)
