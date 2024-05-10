@@ -26,7 +26,7 @@ func (uc *UserController) UserController(c *gin.Context) {
 		fmt.Println(err)
 	} else {
 		c.JSON(
-			status.ErrorStatusMap["CREATED"].StatusCode,
+			201,
 			result,
 		)
 	}
