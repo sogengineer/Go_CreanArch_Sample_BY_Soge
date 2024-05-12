@@ -1,4 +1,4 @@
-package user_domain_service_test
+package create_user_domain_service_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	status "github.com/Go_CleanArch/common/const"
 	"github.com/Go_CleanArch/common/errors"
-	createUserDomain "github.com/Go_CleanArch/domain/service/user"
+	createUserDomain "github.com/Go_CleanArch/domain/service/user/create_user"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -17,6 +17,21 @@ type DBConnection struct {
 	db  *gorm.DB
 	ctx context.Context
 }
+
+func NewDBConnection(ctx context.Context) (*DBConnection, error) {
+	// データベース接続を取得
+	dbInstance, err := getDB(ctx)
+	if err != nil {
+		return nil, err
+	} else {
+		dbConnect := &DBConnection{
+			db:  dbInstance,
+			ctx: ctx,
+		}
+		return dbConnect, nil
+	}
+}
+
 type contextKey string
 type TransactionFunc func(tx *gorm.DB) error
 
@@ -61,14 +76,24 @@ func establishConnection() error {
 	return nil
 }
 
-func GetDB(ctx context.Context) (*gorm.DB, error) {
+func getDB(ctx context.Context) (*gorm.DB, error) {
 	if tx, ok := ctx.Value(dbKey).(*gorm.DB); ok {
 		// コンテキストにトランザクションがある場合、それを返す
 		return tx, nil
 	}
-	deadline := time.After(5 * time.Second) // タイムアウトの設定
 
-	for {
+	const (
+		maxRetries = 3
+		retryDelay = time.Second
+	)
+
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		// デッドラインが設定されていない場合、デフォルトのタイムアウトを設定
+		deadline = time.Now().Add(5 * time.Second)
+	}
+
+	for i := 0; i < maxRetries; i++ {
 		connValue := connection.Load()
 		if connValue != nil {
 			conn := connValue.(*DBConnection)
@@ -76,100 +101,80 @@ func GetDB(ctx context.Context) (*gorm.DB, error) {
 			select {
 			case <-conn.ctx.Done():
 				// 接続のコンテキストがキャンセルされている場合、少し待ってから再試行
-				time.Sleep(time.Second)
+				time.Sleep(retryDelay)
 			case <-ctx.Done():
 				// 呼び出し元のコンテキストがキャンセルされた場合、エラーを返す
 				return nil, ctx.Err()
-			case <-deadline:
-				// タイムアウトした場合、エラーを返す
-				return nil, fmt.Errorf("GetDB: データベース接続待機中にタイムアウト")
 			default:
 				// どちらのコンテキストもキャンセルされていない場合、データベース接続を返す
 				return conn.db, nil
 			}
 		} else {
 			// 接続がない場合、少し待ってから再試行
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				// 呼び出し元のコンテキストがキャンセルされた場合、エラーを返す
+				return nil, ctx.Err()
+			case <-time.After(retryDelay):
+				// 少し待ってから次の試行へ
+			}
+		}
+
+		// タイムアウトチェック
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("getDB: データベース接続の取得がタイムアウトしました")
 		}
 	}
+
+	return nil, fmt.Errorf("getDB: データベース接続の取得に失敗しました（リトライ回数: %d）", maxRetries)
 }
 
-func Find(ctx context.Context, query string, args []interface{}, out interface{}) error {
-	db, err := GetDB(ctx)
-	if err != nil {
-		return fmt.Errorf("データベース接続の取得に失敗: %w", err)
-	}
+func (dbConnect DBConnection) Find(ctx context.Context, query string, args []interface{}, out interface{}) error {
 
-	if err := db.WithContext(ctx).Where(query, args...).First(out).Error; err != nil {
+	if err := dbConnect.db.WithContext(ctx).Where(query, args...).First(out).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func FindAll(ctx context.Context, query string, args []interface{}, out interface{}) error {
-	db, err := GetDB(ctx)
-	if err != nil {
-		return fmt.Errorf("データベース接続の取得に失敗: %w", err)
-	}
-
-	if err := db.WithContext(ctx).Where(query, args...).Find(out).Error; err != nil {
+func (dbConnect DBConnection) FindAll(ctx context.Context, query string, args []interface{}, out interface{}) error {
+	if err := dbConnect.db.WithContext(ctx).Where(query, args...).Find(out).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func FindWithRawJoinQuery(ctx context.Context, sqlQuery string, out interface{}, params ...interface{}) error {
-	db, err := GetDB(ctx)
-	if err != nil {
-		return fmt.Errorf("データベース接続の取得に失敗: %w", err)
-	}
-
-	if err := db.Raw(sqlQuery, params...).Find(out).Error; err != nil {
+func (dbConnect DBConnection) FindWithRawJoinQuery(ctx context.Context, sqlQuery string, out interface{}, params ...interface{}) error {
+	if err := dbConnect.db.Raw(sqlQuery, params...).Find(out).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func Create(ctx context.Context, value interface{}) error {
-	// データベース接続を取得
-	db, err := GetDB(ctx)
-	if err != nil {
-		return fmt.Errorf("データベース接続の取得に失敗: %w", err)
-	}
-
+func (dbConnect DBConnection) Create(ctx context.Context, value interface{}) error {
 	// データベースにレコードを作成
-	if err := db.WithContext(ctx).Create(value).Error; err != nil {
+	if err := dbConnect.db.WithContext(ctx).Create(value).Error; err != nil {
 		return fmt.Errorf("データベースにレコードを作成できませんでした: %w", err)
 	}
 
 	return nil
 }
 
-func Delete(ctx context.Context, query string, args []interface{}, out interface{}) error {
+func (dbConnect DBConnection) Delete(ctx context.Context, query string, args []interface{}, out interface{}) error {
 	// データベース接続を取得
-	db, err := GetDB(ctx)
-	if err != nil {
-		return fmt.Errorf("データベース接続の取得に失敗: %w", err)
-	}
-
-	// データベースにレコードを作成
-	if err := db.WithContext(ctx).Where(query, args...).Delete(out).Error; err != nil {
+	if err := dbConnect.db.WithContext(ctx).Where(query, args...).Delete(out).Error; err != nil {
 		return fmt.Errorf("データベースのレコードを削除できませんでした: %w", err)
 	}
 
 	return nil
 }
 
-func WithTransaction(ctx context.Context, fn TransactionFunc) error {
-	db, err := GetDB(ctx)
-	if err != nil {
-		return fmt.Errorf("データベース接続の取得に失敗: %w", err)
-	}
+func (dbConnect DBConnection) WithTransaction(ctx context.Context, fn TransactionFunc) error {
 
-	tx := db.WithContext(ctx).Begin()
+	tx := dbConnect.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("トランザクションの開始に失敗: %w", tx.Error)
 	}
@@ -186,15 +191,9 @@ func WithTransaction(ctx context.Context, fn TransactionFunc) error {
 	return nil
 }
 
-func Update(ctx context.Context, value interface{}) error {
-	// データベース接続を取得
-	db, err := GetDB(ctx)
-	if err != nil {
-		return fmt.Errorf("データベース接続の取得に失敗: %w", err)
-	}
-
+func (dbConnect DBConnection) Update(ctx context.Context, value interface{}) error {
 	// レコード更新
-	if err := db.WithContext(ctx).Save(value).Error; err != nil {
+	if err := dbConnect.db.WithContext(ctx).Save(value).Error; err != nil {
 		return fmt.Errorf("データベースのレコードを更新できませんでした: %w", err)
 	}
 

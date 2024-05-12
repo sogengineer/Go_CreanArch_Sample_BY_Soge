@@ -13,21 +13,17 @@ import (
 )
 
 type userRepository struct {
-	db  *gorm.DB
-	ctx context.Context
+	db  *dbConnect.DBConnection
 }
 
 // コンストラクタ
 func NewUserRepository(ctx context.Context) (repository.UserRepository, error) {
-	dbConnectionResult, err := dbConnect.GetDB(ctx)
+	dbConnect, err := dbConnect.NewDBConnection(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to connect to the database")
-		return nil, fmt.Errorf("DB接続に失敗しました")
+		return nil, err
 	}
-
 	result := userRepository{
-		db:  dbConnectionResult,
-		ctx: ctx,
+		db: dbConnect,
 	}
 
 	return &result, nil
@@ -42,7 +38,7 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, userJson [
 	}
 
 	// 新しいCreateメソッドを使用してデータベースにユーザーを作成
-	if err := dbConnect.Create(ctx, &user); err != nil {
+	if err := userRepository.db.Create(ctx, &user); err != nil {
 		log.WithError(err).Error("Failed to create user in the database")
 		return nil, err
 	}
@@ -56,7 +52,7 @@ func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email
 	var user entity.User
 
 	// dbConnectのFind関数を使用
-	err := dbConnect.Find(ctx, "email = ?", []interface{}{email}, &user)
+	err := userRepository.db.Find(ctx, "email = ?", []interface{}{email}, &user)
 	if err == gorm.ErrRecordNotFound {
 		// レコードが見つからなかったエラー
 		log.WithField("email", email).Info("User not found")
