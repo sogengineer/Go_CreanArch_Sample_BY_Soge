@@ -1,4 +1,4 @@
-package user_domain_service
+package login_user_domain_service
 
 import (
 	status "github.com/Go_CleanArch/common/const"

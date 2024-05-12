@@ -6,7 +6,8 @@ import (
 	status "github.com/Go_CleanArch/common/const"
 	"github.com/Go_CleanArch/common/crypto"
 	"github.com/Go_CleanArch/common/errors"
-	userDomainService "github.com/Go_CleanArch/domain/service/user"
+	createUserDomainService "github.com/Go_CleanArch/domain/service/user/create_user"
+	loginUserDomainService "github.com/Go_CleanArch/domain/service/user/login_user"
 	inputUser "github.com/Go_CleanArch/usecase/input/user"
 	outputUser "github.com/Go_CleanArch/usecase/output/user"
 	repository "github.com/Go_CleanArch/usecase/repository_interface"
@@ -52,7 +53,6 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	findUser, err := us.userRepository.FindUserByEmail(ctx, createUserForm.Email)
 	if err != nil {
 		log.WithError(err).Error("Failed to find user by email")
-		return createUserPresenter, err
 	}
 	findUserId := ""
 	if findUser != nil {
@@ -60,11 +60,11 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// 登録するユーザー情報のビルドを行う
-	createUserDomainServiceProps, apiErr := userDomainService.NewCreateUserDomainServiceProps(
-		userDomainService.WithUserId(findUserId),
-		userDomainService.WithEmail(createUserForm.Email),
-		userDomainService.WithUserName(createUserForm.UserName),
-		userDomainService.WithPassword(createUserForm.Password),
+	createUserDomainServiceProps, apiErr := createUserDomainService.NewCreateUserDomainServiceProps(
+		createUserDomainService.WithUserId(findUserId),
+		createUserDomainService.WithEmail(createUserForm.Email),
+		createUserDomainService.WithUserName(createUserForm.UserName),
+		createUserDomainService.WithPassword(createUserForm.Password),
 	)
 	if apiErr != nil {
 		log.WithField("apiErr", apiErr).Error("Failed to build user factory props")
@@ -134,10 +134,10 @@ func (us *UserService) LoginService(ctx context.Context, c *gin.Context) (output
 		return loginPresenter, apiErr.Error()
 	}
 
-	userDomainServiceEntity, apiErr := userDomainService.NewLoginUserDomainServiceProps(
-		userDomainService.WithLoginUserIdAndEmail(getUser.Email),
-		userDomainService.WithLoginUserName(getUser.UserName),
-		userDomainService.WithLoginPassword(getUser.Password, loginForm.Password),
+	userDomainServiceEntity, apiErr := loginUserDomainService.NewLoginUserDomainServiceProps(
+		loginUserDomainService.WithLoginUserIdAndEmail(getUser.Email),
+		loginUserDomainService.WithLoginUserName(getUser.UserName),
+		loginUserDomainService.WithLoginPassword(getUser.Password, loginForm.Password),
 	)
 	if apiErr != nil {
 		log.WithField("apiErr", apiErr).Error("Failed to build login user domain props")
