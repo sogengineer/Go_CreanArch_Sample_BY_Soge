@@ -1,4 +1,4 @@
-package create_user_domain_entity_test
+package user_domain_service_test
 
 import (
 	"fmt"
@@ -6,11 +6,11 @@ import (
 
 	status "github.com/Go_CleanArch/common/const"
 	"github.com/Go_CleanArch/common/errors"
-	createUserDomain "github.com/Go_CleanArch/domain/factory/user"
+	createUserDomain "github.com/Go_CleanArch/domain/service/user"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCreateUserFactoryProps(t *testing.T) {
+func TestNewCreateUserDomainServiceProps(t *testing.T) {
 	t.Parallel()
 
 	email := "test@example.com"
@@ -20,7 +20,7 @@ func TestNewCreateUserFactoryProps(t *testing.T) {
 	t.Run("正常系: 有効なプロパティでユーザー作成", func(t *testing.T) {
 		t.Parallel()
 
-		props, err := createUserDomain.NewCreateUserFactoryProps(
+		props, err := createUserDomain.NewCreateUserDomainServiceProps(
 			createUserDomain.WithUserId(""),
 			createUserDomain.WithEmail(email),
 			createUserDomain.WithUserName(userName),
@@ -39,7 +39,7 @@ func TestNewCreateUserFactoryProps(t *testing.T) {
 
 		existingUserId := "existing_user_id"
 
-		props, err := createUserDomain.NewCreateUserFactoryProps(
+		props, err := createUserDomain.NewCreateUserDomainServiceProps(
 			createUserDomain.WithUserId(existingUserId),
 			createUserDomain.WithEmail(email),
 			createUserDomain.WithUserName(userName),
@@ -57,13 +57,13 @@ func TestNewCreateUserFactoryProps(t *testing.T) {
 	t.Run("異常系: パスワードの暗号化に失敗", func(t *testing.T) {
 		t.Parallel()
 
-		withPasswordMock := func(password string) createUserDomain.CreateUserFactoryPropsOption {
-			return func(props *createUserDomain.CreateUserFactoryProps) ([]errors.ApiErrMessage, error) {
+		withPasswordMock := func(password string) createUserDomain.CreateUserDomainServicePropsOption {
+			return func(props *createUserDomain.CreateUserDomainServiceProps) ([]errors.ApiErrMessage, error) {
 				return nil, fmt.Errorf("encryption failed %s", password)
 			}
 		}
 
-		props, err := createUserDomain.NewCreateUserFactoryProps(
+		props, err := createUserDomain.NewCreateUserDomainServiceProps(
 			createUserDomain.WithUserId(""),
 			createUserDomain.WithEmail(email),
 			createUserDomain.WithUserName(userName),

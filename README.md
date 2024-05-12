@@ -157,7 +157,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// 登録するユーザー情報のビルドを行う
-	createUserFactoryProps, apiErr := createUserDomain.NewCreateUserFactoryProps(
+	CreateCommonUserFactoryProps, apiErr := createUserDomain.NewCreateCommonUserFactoryProps(
 		createUserDomain.WithUserId(findUserId),
 		createUserDomain.WithEmail(createUserForm.Email),
 		createUserDomain.WithUserName(createUserForm.UserName),
@@ -170,7 +170,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// ビルドしたユーザー情報を基にユーザー登録を行う
-	getUserJson, err := crypto.ConvertStructIntoJson(createUserFactoryProps)
+	getUserJson, err := crypto.ConvertStructIntoJson(CreateCommonUserFactoryProps)
 	if err != nil {
 		log.WithError(err).Error("Failed to convert user factory props into JSON")
 		c.JSON(500, err)
@@ -194,7 +194,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 - 1.リクエストボディからJSONデータをCreateUserForm構造体にバインド
 - 2.CreateUserValidateメソッドを呼び出し、入力データのバリデーションを行います。バリデーションエラーがある場合は、エラーレスポンスを返す
 - 3.UserRepositoryを使用して、登録済みのメールアドレスを再登録しようとしていないかチェック
-- 4.createUserDomain.NewCreateUserFactoryProps関数を呼び出して、登録するユーザー情報のビルドを行う
+- 4.createUserDomain.NewCreateCommonUserFactoryProps関数を呼び出して、登録するユーザー情報のビルドを行う
 - 5.ビルドしたユーザー情報をJSONに変換し、UserRepositoryのCreateUserメソッドを呼び出してユーザー登録を行う
 - 6.登録されたユーザー情報をCreateUserPresenter構造体に変換し、レスポンスとして返す
 

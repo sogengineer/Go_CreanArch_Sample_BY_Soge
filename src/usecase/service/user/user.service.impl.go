@@ -6,8 +6,7 @@ import (
 	status "github.com/Go_CleanArch/common/const"
 	"github.com/Go_CleanArch/common/crypto"
 	"github.com/Go_CleanArch/common/errors"
-	loginUserDomain "github.com/Go_CleanArch/domain/entity/user"
-	createUserDomain "github.com/Go_CleanArch/domain/factory/user"
+	userDomainService "github.com/Go_CleanArch/domain/service/user"
 	inputUser "github.com/Go_CleanArch/usecase/input/user"
 	outputUser "github.com/Go_CleanArch/usecase/output/user"
 	repository "github.com/Go_CleanArch/usecase/repository_interface"
@@ -61,11 +60,11 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// 登録するユーザー情報のビルドを行う
-	createUserFactoryProps, apiErr := createUserDomain.NewCreateUserFactoryProps(
-		createUserDomain.WithUserId(findUserId),
-		createUserDomain.WithEmail(createUserForm.Email),
-		createUserDomain.WithUserName(createUserForm.UserName),
-		createUserDomain.WithPassword(createUserForm.Password),
+	createUserDomainServiceProps, apiErr := userDomainService.NewCreateUserDomainServiceProps(
+		userDomainService.WithUserId(findUserId),
+		userDomainService.WithEmail(createUserForm.Email),
+		userDomainService.WithUserName(createUserForm.UserName),
+		userDomainService.WithPassword(createUserForm.Password),
 	)
 	if apiErr != nil {
 		log.WithField("apiErr", apiErr).Error("Failed to build user factory props")
@@ -74,7 +73,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// ビルドしたユーザー情報を基にユーザー登録を行う
-	getUserJson, err := crypto.ConvertStructIntoJson(createUserFactoryProps)
+	getUserJson, err := crypto.ConvertStructIntoJson(createUserDomainServiceProps)
 	if err != nil {
 		log.WithError(err).Error("Failed to convert user factory props into JSON")
 		c.JSON(500, err)
@@ -135,10 +134,10 @@ func (us *UserService) LoginService(ctx context.Context, c *gin.Context) (output
 		return loginPresenter, apiErr.Error()
 	}
 
-	loginUserDomainEntity, apiErr := loginUserDomain.NewLoginUserDomainProps(
-		loginUserDomain.WithLoginUserIdAndEmail(getUser.Email),
-		loginUserDomain.WithLoginUserName(getUser.UserName),
-		loginUserDomain.WithLoginPassword(getUser.Password, loginForm.Password),
+	userDomainServiceEntity, apiErr := userDomainService.NewLoginUserDomainServiceProps(
+		userDomainService.WithLoginUserIdAndEmail(getUser.Email),
+		userDomainService.WithLoginUserName(getUser.UserName),
+		userDomainService.WithLoginPassword(getUser.Password, loginForm.Password),
 	)
 	if apiErr != nil {
 		log.WithField("apiErr", apiErr).Error("Failed to build login user domain props")
@@ -146,7 +145,7 @@ func (us *UserService) LoginService(ctx context.Context, c *gin.Context) (output
 		return loginPresenter, apiErr.Error()
 	}
 
-	getUserJson, err := crypto.ConvertStructIntoJson(loginUserDomainEntity)
+	getUserJson, err := crypto.ConvertStructIntoJson(userDomainServiceEntity)
 	if err != nil {
 		log.WithError(err).Error("Failed to convert login user domain entity into JSON")
 		return loginPresenter, err

@@ -1,4 +1,4 @@
-package login_user_domain_entity
+package user_domain_service
 
 import (
 	status "github.com/Go_CleanArch/common/const"
@@ -16,7 +16,7 @@ type LoginUserBuilderProps struct {
 
 type LoginUserBuilderPropsOption func(*LoginUserBuilderProps) ([]errors.ApiErrMessage, error)
 
-func NewLoginUserDomainProps(opts ...LoginUserBuilderPropsOption) (*LoginUserBuilderProps, *errors.ApiErr) {
+func NewLoginUserDomainServiceProps(opts ...LoginUserBuilderPropsOption) (*LoginUserBuilderProps, *errors.ApiErr) {
 	apiErrMessages := make([]errors.ApiErrMessage, 0)
 	loginUserBuilderProps := &LoginUserBuilderProps{}
 	for _, opt := range opts {
