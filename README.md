@@ -12,6 +12,14 @@
 - インフラストラクチャ層（Infrastructure Layer）
   - src/infrastructure配下
 
+<br>
+■参考 <BR>
+よくネットである図
+
+<img width="500" alt="SCR-20230502-nedr" src="https://github.com/AsanoSogen/Go_CreanArch_Sample_BY_Soge/assets/59726661/e99f0a33-dd95-4568-abc9-effde00a69ae">
+
+<br>
+
 ### インターフェース層（Interface Adapter Layer）
 インターフェース層は、外部からの入力を受け取り、適切なユースケースを呼び出すための層。この層では、以下のような要素が含まれる。
 #### コントローラー（Controller）
