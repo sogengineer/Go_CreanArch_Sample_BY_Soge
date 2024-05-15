@@ -1,11 +1,11 @@
 package status
 
-type ErrorStatus struct {
+type Status struct {
 	StatusCode int    `json:"statusCd"`
 	StatusName string `json:"statusName"`
 }
 
-var ErrorStatusMap = map[string]ErrorStatus{
+var SuccessStatusMap = map[string]Status{
 	"OK": {
 		StatusCode: 200,
 		StatusName: "OK",
@@ -18,6 +18,9 @@ var ErrorStatusMap = map[string]ErrorStatus{
 		StatusCode: 202,
 		StatusName: "Accepted",
 	},
+}
+
+var ErrorStatusMap = map[string]Status{
 	"BAD_REQUEST": {
 		StatusCode: 400,
 		StatusName: "Bad Request",

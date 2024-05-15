@@ -19,7 +19,6 @@
 
 例：
 ```golang
-// UserController is user controlller
 type UserController struct {
 	userService userService.UserService
 }
@@ -37,7 +36,7 @@ func (uc *UserController) UserController(c *gin.Context) {
 		fmt.Println(err)
 	} else {
 		c.JSON(
-			201,
+			status.SuccessStatusMap["CREATED"].StatusCode,
 			result,
 		)
 	}
@@ -69,9 +68,11 @@ func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email
 - 同階層のエンティティを使用してデータの読み書きを行っている。
   - gateway内のエンティティはテーブル定義と同様にしている
 - インフラストラクチャ層の実装（dbConnect）を使用している。※後ほど説明
-  - 汎用的なDB操作の詳細はインフラストラクチャ層で実装し、特定のスキーマおよびテーブルの指定および操作はゲートウェイで実装している
+  - 汎用的なDB操作の詳細はインフラストラクチャ層で実装し、特定のスキーマおよびテーブルの指定、操作はゲートウェイで実装している。(プロジェクトや場合によりますが、自分はその方法を採用しています。)
 
-### アプリケーション層（Application Layer）
+<br><br>
+
+### UseCase層（Application Layer）
 ユースケースの実装を担当する層。
 #### インプット（Input）
 リクエストパラメータで処理の対象となる項目を表すデータを定義する場所
@@ -119,11 +120,27 @@ func (createUserForm CreateUserForm) CreateUserValidate() []errors.ApiErrMessage
 - CreateUserValidateメソッドは、ozzo-validationライブラリを使用して入力データのバリデーションを行っている
   - バリデーションエラーがある場合は、本サンプル実装独自の型であるApiErrMessageスライスを返す
 
+<br>
+
 #### アウトプット（Output）
 出力データを定義する箇所
 
-#### ユースケース（Usecase）
+<br>
+
+#### サービス（Service）
 ```golang
+type UserService struct {
+	userRepository repository.UserRepository
+}
+
+// Constructor
+func NewUserService(userRepository repository.UserRepository) *UserService {
+	return &UserService{
+		userRepository: userRepository,
+	}
+}
+
+// サインアップ
 func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (outputUser.CreateUserPresenter, error) {
 	var createUserForm inputUser.CreateUserForm
 	var createUserPresenter outputUser.CreateUserPresenter
@@ -149,7 +166,6 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	findUser, err := us.userRepository.FindUserByEmail(ctx, createUserForm.Email)
 	if err != nil {
 		log.WithError(err).Error("Failed to find user by email")
-		return createUserPresenter, err
 	}
 	findUserId := ""
 	if findUser != nil {
@@ -157,11 +173,11 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// 登録するユーザー情報のビルドを行う
-	CreateCommonUserFactoryProps, apiErr := createUserDomain.NewCreateCommonUserFactoryProps(
-		createUserDomain.WithUserId(findUserId),
-		createUserDomain.WithEmail(createUserForm.Email),
-		createUserDomain.WithUserName(createUserForm.UserName),
-		createUserDomain.WithPassword(createUserForm.Password),
+	createUserDomainServiceProps, apiErr := createUserDomainService.NewCreateUserDomainServiceProps(
+		createUserDomainService.WithUserId(findUserId),
+		createUserDomainService.WithEmail(createUserForm.Email),
+		createUserDomainService.WithUserName(createUserForm.UserName),
+		createUserDomainService.WithPassword(createUserForm.Password),
 	)
 	if apiErr != nil {
 		log.WithField("apiErr", apiErr).Error("Failed to build user factory props")
@@ -170,7 +186,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// ビルドしたユーザー情報を基にユーザー登録を行う
-	getUserJson, err := crypto.ConvertStructIntoJson(CreateCommonUserFactoryProps)
+	getUserJson, err := crypto.ConvertStructIntoJson(createUserDomainServiceProps)
 	if err != nil {
 		log.WithError(err).Error("Failed to convert user factory props into JSON")
 		c.JSON(500, err)
@@ -198,6 +214,12 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 - 5.ビルドしたユーザー情報をJSONに変換し、UserRepositoryのCreateUserメソッドを呼び出してユーザー登録を行う
 - 6.登録されたユーザー情報をCreateUserPresenter構造体に変換し、レスポンスとして返す
 
+■Serviceの役割
+- 受け取ったInputのパラメータをもとに、集約を跨ったりコアビジネスロジックを経由したりして、定義されているOutputパラメータへとデータが整形されていく過程を司る箇所
+- ドメイン層とインターフェース層の仲介役を担っている
+
+<br>
+
 #### リポジトリインターフェース(Repository Interface)
 ユースケースから使用するリポジトリのインターフェースを定義
 ```golang
@@ -208,18 +230,18 @@ type UserRepository interface {
 ```
 アプリケーション層では、このリポジトリインターフェースを使用してデータアクセスを行う。実際のリポジトリの実装は、インターフェース層・ゲートウェイで行われる。
 
+<br>
+
+**※なぜ、リポジトリのインターフェースは提供側でなく利用側の階層に定義するの？**
+- 利用側でインターフェースを定義することで、利用側のコードがリポジトリの具体的な実装ではなくインターフェースに依存するようになり依存関係の方向を逆転させることができるから。(依存性逆転の法則(DI)と言います)
+  - DIにより利用側のコードが実装の詳細(Gateway層/Repository)から切り離され柔軟性が高くなる他、リポジトリ層をモック化することが容易となり、テスタビリティが向上する効果がある
+- ただし、これはGoにおける一般的な傾向であり、プロジェクトの要件や設計方針によっては、提供側でインターフェースを定義することもあります。
+  - 重要なのは**コードの柔軟性、保守性、テスト容易性を高めること**
+
+<br>
+<br>
 
 ### Domain層
-アプリケーションのコアビジネスロジック、エンティティ、およびアプリケーションの契約を定義する箇所。サンプルでは、`entity`と`factory`を実装している。
-- entity
-  - アプリケーションのコアエンティティを定義した箇所。コアエンティティとは、ドメインの不変条件を維持する箇所。例えば車は空を飛ばないし海を渡らないが陸を走るという振る舞いをするが、エンティティではそのようなドメインの制約やルールを定義する。
-- factory
-  - ドメインオブジェクト(エンティティ)の生成ロジックを集約し、複雑な生成プロセスを記載する箇所。主にエンティティの生成および依存関係の管理を行う場所。登録系の処理の際には、ファクトリーの複雑なロジックを通過して生成されたエンティティのみが登録へと進むことができる。
-
-### Usecase層
-Usecase層は、Domain層とInfrastructure層の間に位置し、両者を仲介する役割を果たす層のこと。
-- 特徴
-  - ユースケースごとにテストを書きやすくなる
-  - Domain層とInfrastructure層の処理の影響を受けにくくなる。
-  - 保守性や再利用性が高められる
-  - 入力データのバリデーションを行い、不正なデータを早期に検出する
+アプリケーションのコアビジネスロジック、エンティティ、およびアプリケーションの契約を定義する箇所
+#### ドメインサービス(Domain Service)
+複数のエンティティやバリューオブジェクトを調整し、ビジネスロジックを実装するオブジェクトのこと

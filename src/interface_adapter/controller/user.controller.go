@@ -26,7 +26,7 @@ func (uc *UserController) UserController(c *gin.Context) {
 		fmt.Println(err)
 	} else {
 		c.JSON(
-			201,
+			status.SuccessStatusMap["CREATED"].StatusCode,
 			result,
 		)
 	}
@@ -40,7 +40,7 @@ func (uc *UserController) LoginControler(c *gin.Context) {
 		fmt.Println(err)
 	} else {
 		c.JSON(
-			status.ErrorStatusMap["OK"].StatusCode,
+			status.SuccessStatusMap["OK"].StatusCode,
 			result,
 		)
 	}
