@@ -30,7 +30,7 @@ func NewUserRepository(ctx context.Context) (repository.UserRepository, error) {
 }
 
 // ユーザーレコード作成
-func (userRepository *userRepository) CreateUser(ctx context.Context, userJson []byte) (*entity.User, error) {
+func (ur *userRepository) CreateUser(ctx context.Context, userJson []byte) (*entity.User, error) {
 	var user entity.User
 	if err := crypto.CopyBeans(userJson, &user); err != nil {
 		log.WithError(err).Error("Failed to copy user data")
@@ -38,7 +38,7 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, userJson [
 	}
 
 	// 新しいCreateメソッドを使用してデータベースにユーザーを作成
-	if err := userRepository.db.Create(ctx, &user); err != nil {
+	if err := ur.db.Create(ctx, &user); err != nil {
 		log.WithError(err).Error("Failed to create user in the database")
 		return nil, err
 	}
@@ -48,11 +48,11 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, userJson [
 }
 
 // Userの存在チェック
-func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email string) (*entity.User, error) {
+func (ur *userRepository) FindUserByEmail(ctx context.Context, email string) (*entity.User, error) {
 	var user entity.User
 
 	// dbConnectのFind関数を使用
-	err := userRepository.db.Find(ctx, "email = ?", []interface{}{email}, &user)
+	err := ur.db.Find(ctx, "email = ?", []interface{}{email}, &user)
 	if err == gorm.ErrRecordNotFound {
 		// レコードが見つからなかったエラー
 		log.WithField("email", email).Info("User not found")
