@@ -1,4 +1,4 @@
-package create_user_domain_service
+package createuser
 
 import (
 	status "github.com/Go_CleanArch/common/const"

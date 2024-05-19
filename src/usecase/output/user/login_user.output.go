@@ -1,4 +1,4 @@
-package outputUser
+package user
 
 // ログイン
 type LoginPresenter struct {

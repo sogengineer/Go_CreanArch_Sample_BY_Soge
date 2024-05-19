@@ -1,4 +1,4 @@
-package inputUser
+package user
 
 import (
 	"regexp"

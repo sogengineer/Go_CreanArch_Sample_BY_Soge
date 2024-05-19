@@ -7,9 +7,9 @@
   - src/interface_adapter配下
 - アプリケーション層（Application Layer）
   - src/usecase配下
-- ドメイン層（Domain Layer）
+- ドメイン層（Enterprise Business Layer）
   - src/domain配下
-- インフラストラクチャ層（Infrastructure Layer）
+- インフラストラクチャ層（Framework & Driver Layer）
   - src/infrastructure配下
 
 <br>

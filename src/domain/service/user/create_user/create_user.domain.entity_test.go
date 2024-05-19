@@ -1,4 +1,4 @@
-package create_user_domain_service_test
+package createuser_test
 
 import (
 	"fmt"

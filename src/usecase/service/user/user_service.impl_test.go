@@ -1,4 +1,4 @@
-package user_service_impl_test
+package user_test
 
 import (
 	"bytes"
