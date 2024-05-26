@@ -17,7 +17,7 @@ type userRepository struct {
 }
 
 // コンストラクタ
-func NewUserRepository(ctx context.Context) (repository.UserRepository, error) {
+func NewUserRepository(ctx context.Context) (repository.UserRepositoryInterface, error) {
 	dbConnect, err := dbConnect.NewDBConnection(ctx)
 	if err != nil {
 		return nil, err

@@ -6,8 +6,8 @@ import (
 	status "github.com/Go_CleanArch/common/const"
 	"github.com/Go_CleanArch/common/crypto"
 	"github.com/Go_CleanArch/common/errors"
-	createUserDomainService "github.com/Go_CleanArch/domain/service/user/create_user"
-	loginUserDomainService "github.com/Go_CleanArch/domain/service/user/login_user"
+	createUserFactory "github.com/Go_CleanArch/domain/factory/user/create_user"
+	loginUserDomainService "github.com/Go_CleanArch/domain/factory/user/login_user"
 	inputUser "github.com/Go_CleanArch/usecase/input/user"
 	outputUser "github.com/Go_CleanArch/usecase/output/user"
 	repository "github.com/Go_CleanArch/usecase/repository_interface"
@@ -17,11 +17,11 @@ import (
 
 // Service provides user's behavior
 type UserService struct {
-	userRepository repository.UserRepository
+	userRepository repository.UserRepositoryInterface
 }
 
 // Constructor
-func NewUserService(userRepository repository.UserRepository) *UserService {
+func NewUserService(userRepository repository.UserRepositoryInterface) *UserService {
 	return &UserService{
 		userRepository: userRepository,
 	}
@@ -60,11 +60,14 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// 登録するユーザー情報のビルドを行う
-	createUserDomainServiceProps, apiErr := createUserDomainService.NewCreateUserDomainServiceProps(
-		createUserDomainService.WithUserId(findUserId),
-		createUserDomainService.WithEmail(createUserForm.Email),
-		createUserDomainService.WithUserName(createUserForm.UserName),
-		createUserDomainService.WithPassword(createUserForm.Password),
+	a := createUserFactory.NewCreateUserFactory()
+	i, apiErr := a.CreateUser(
+		&createUserFactory.CreateUserInitProps{
+			UserId: findUserId,
+			UserName: createUserForm.Email,
+			Password: createUserForm.Password,
+			Email: createUserForm.Email,
+		},
 	)
 	if apiErr != nil {
 		log.WithField("apiErr", apiErr).Error("Failed to build user factory props")
@@ -73,7 +76,7 @@ func (us *UserService) CreateUserService(ctx context.Context, c *gin.Context) (o
 	}
 
 	// ビルドしたユーザー情報を基にユーザー登録を行う
-	getUserJson, err := crypto.ConvertStructIntoJson(createUserDomainServiceProps)
+	getUserJson, err := crypto.ConvertStructIntoJson(i)
 	if err != nil {
 		log.WithError(err).Error("Failed to convert user factory props into JSON")
 		c.JSON(500, err)
