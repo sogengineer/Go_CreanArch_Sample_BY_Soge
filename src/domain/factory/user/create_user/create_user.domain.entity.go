@@ -42,7 +42,10 @@ func (uf *CreateUserFactory) CreateUser(props *CreateUserInitProps) (*entity.Use
 			status.ErrorStatusMap["INTERNAL_SERVER_ERROR"].StatusName,
 		)
 	}
-	apiErrMessages = append(apiErrMessages, checkUserExistErrorMessage...)
+	// checkUserExistErrorMessageの値がnil以外だった場合APIエラーメッセージリストに内容を追加する
+	if checkUserExistErrorMessage != nil {
+		apiErrMessages = append(apiErrMessages, checkUserExistErrorMessage...)
+	}
 
 	// パスワードのハッシュ化
 	hashedPassword, err := uf.GeneratePassword(props.Password)
