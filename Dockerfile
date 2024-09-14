@@ -1,4 +1,4 @@
-FROM golang:1.18.3-alpine as builder
+FROM golang:1.22-alpine as builder
 
 ENV ROOT=/go/src/app
 WORKDIR ${ROOT}

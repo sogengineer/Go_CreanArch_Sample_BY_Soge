@@ -1,5 +1,5 @@
 # ベースイメージとして Golang の Alpine バージョンを使用
-FROM golang:1.18.3-alpine
+FROM golang:1.22-alpine
 
 # 作業ディレクトリを設定
 WORKDIR /app
@@ -14,7 +14,9 @@ RUN apk upgrade --update && \
 
 # Go 依存関係をインストール
 RUN go mod download && \
-    go install honnef.co/go/tools/cmd/staticcheck@v0.3.0
+    go install honnef.co/go/tools/cmd/staticcheck@v0.3.0 && \
+    go install github.com/swaggo/swag/cmd/swag@latest
 
+ENV PATH="/root/go/bin:${PATH}"
 # ホットリロード用のコマンドを設定
 CMD ["watchexec", "-w", ".", "--force-poll", "100", "-r", "go", "run", "main.go"]

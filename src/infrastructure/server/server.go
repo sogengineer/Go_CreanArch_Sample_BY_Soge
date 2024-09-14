@@ -9,6 +9,10 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
+	_ "github.com/Go_CleanArch/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type contextKey string
@@ -73,6 +77,8 @@ func CustomLoggingMiddleware() gin.HandlerFunc {
 
 func router() *gin.Engine {
 	route := gin.Default()
+
+	route.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	route.Use(GinContextToContextMiddleware())
 	route.Use(CustomLoggingMiddleware())
